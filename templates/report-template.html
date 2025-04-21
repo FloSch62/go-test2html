@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ .Title }}</title>
+    <style>
+        :root {
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --warning-color: #ff9800;
+            --info-color: #2196F3;
+            --bg-color: #f8f9fa;
+            --card-bg-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+            --hover-color: #f1f3f5;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        h1, h2, h3 {
+            margin-top: 0;
+        }
+
+        .summary {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .summary-card {
+            flex: 1;
+            min-width: 180px;
+            background: var(--card-bg-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            text-align: center;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .summary-card.total {
+            border-top: 4px solid var(--info-color);
+        }
+
+        .summary-card.passed {
+            border-top: 4px solid var(--success-color);
+        }
+
+        .summary-card.failed {
+            border-top: 4px solid var(--error-color);
+        }
+
+        .summary-card.skipped {
+            border-top: 4px solid var(--warning-color);
+        }
+
+        .summary-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .package {
+            background: var(--card-bg-color);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.07);
+            overflow: hidden;
+        }
+
+        .package-header {
+            padding: 15px 20px;
+            background-color: #f5f7fa;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s ease;
+        }
+
+        .package-header:hover {
+            background-color: var(--hover-color);
+        }
+
+        .package-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .package-summary {
+            display: flex;
+            gap: 15px;
+        }
+
+        .summary-item {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .summary-item.passed {
+            background-color: rgba(76, 175, 80, 0.15);
+            color: var(--success-color);
+        }
+
+        .summary-item.failed {
+            background-color: rgba(244, 67, 54, 0.15);
+            color: var(--error-color);
+        }
+
+        .summary-item.skipped {
+            background-color: rgba(255, 152, 0, 0.15);
+            color: var(--warning-color);
+        }
+
+        .package-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .package-content.open {
+            max-height: 5000px;
+            transition: max-height 0.5s ease-in;
+        }
+
+        .test-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .test-item {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+
+        .test-item:hover {
+            background-color: var(--hover-color);
+        }
+
+        .test-item:last-child {
+            border-bottom: none;
+        }
+
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .test-name {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-weight: 500;
+        }
+
+        .test-meta {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .test-duration {
+            color: #666;
+        }
+
+        .test-status {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .test-status.passed {
+            background-color: rgba(76, 175, 80, 0.15);
+            color: var(--success-color);
+        }
+
+        .test-status.failed {
+            background-color: rgba(244, 67, 54, 0.15);
+            color: var(--error-color);
+        }
+
+        .test-status.skipped {
+            background-color: rgba(255, 152, 0, 0.15);
+            color: var(--warning-color);
+        }
+
+        .test-output {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 10px;
+            padding: 10px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .test-output.open {
+            display: block;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s ease;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .package-header.open .toggle-icon {
+            transform: rotate(90deg);
+        }
+
+        @media (max-width: 768px) {
+            .summary {
+                flex-direction: column;
+            }
+
+            .summary-card {
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>{{ .Title }}</h1>
+            <p>Generated on {{ .Date.Format "Jan 02, 2006 at 15:04:05" }}</p>
+        </header>
+
+        <div class="summary">
+            <div class="summary-card total">
+                <div>Total Tests</div>
+                <div class="summary-number">{{ .Summary.Total }}</div>
+            </div>
+            <div class="summary-card passed">
+                <div>Passed</div>
+                <div class="summary-number">{{ .Summary.Passed }}</div>
+            </div>
+            <div class="summary-card failed">
+                <div>Failed</div>
+                <div class="summary-number">{{ .Summary.Failed }}</div>
+            </div>
+            <div class="summary-card skipped">
+                <div>Skipped</div>
+                <div class="summary-number">{{ .Summary.Skipped }}</div>
+            </div>
+        </div>
+
+        <div class="packages">
+            {{ range $pkgName, $pkg := .Packages }}
+            <div class="package">
+                <div class="package-header" onclick="togglePackage(this)">
+                    <div class="package-name">
+                        <span class="toggle-icon">▶</span>{{ $pkg.Name }}
+                    </div>
+                    <div class="package-summary">
+                        <div class="summary-item passed">{{ $pkg.Summary.Passed }} passed</div>
+                        {{ if gt $pkg.Summary.Failed 0 }}
+                        <div class="summary-item failed">{{ $pkg.Summary.Failed }} failed</div>
+                        {{ end }}
+                        {{ if gt $pkg.Summary.Skipped 0 }}
+                        <div class="summary-item skipped">{{ $pkg.Summary.Skipped }} skipped</div>
+                        {{ end }}
+                    </div>
+                </div>
+                <div class="package-content">
+                    <ul class="test-list">
+                        {{ range $test := $pkg.SortedTests }}
+                        <li class="test-item">
+                            <div class="test-header" onclick="toggleOutput(this.parentNode)">
+                                <div class="test-name">{{ $test.Name }}</div>
+                                <div class="test-meta">
+                                    <div class="test-duration">{{ printf "%.2f" $test.Duration }}s</div>
+                                    {{ if $test.Passed }}
+                                    <div class="test-status passed">PASS</div>
+                                    {{ else if $test.Failed }}
+                                    <div class="test-status failed">FAIL</div>
+                                    {{ else if $test.Skipped }}
+                                    <div class="test-status skipped">SKIP</div>
+                                    {{ end }}
+                                </div>
+                            </div>
+                            {{ if $test.Output }}
+                            <div class="test-output">{{ range $line := $test.Output }}{{ $line }}{{ end }}</div>
+                            {{ end }}
+                        </li>
+                        {{ end }}
+                    </ul>
+                </div>
+            </div>
+            {{ end }}
+        </div>
+
+        <footer>
+            <p>Go Test Report Generator</p>
+        </footer>
+    </div>
+
+    <script>
+        function togglePackage(header) {
+            header.classList.toggle('open');
+            const content = header.nextElementSibling;
+            content.classList.toggle('open');
+        }
+
+        function toggleOutput(test) {
+            const output = test.querySelector('.test-output');
+            if (output) {
+                output.classList.toggle('open');
+            }
+        }
+
+        // Automatically open packages with failures
+        document.addEventListener('DOMContentLoaded', function() {
+            const packagesWithFailures = Array.from(document.querySelectorAll('.package'))
+                .filter(pkg => pkg.querySelector('.summary-item.failed'));
+
+            packagesWithFailures.forEach(pkg => {
+                const header = pkg.querySelector('.package-header');
+                const content = pkg.querySelector('.package-content');
+                header.classList.add('open');
+                content.classList.add('open');
+            });
+        });
+    </script>
+</body>
+</html>
