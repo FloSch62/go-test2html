@@ -2,6 +2,12 @@
 
 A clean and modern HTML report generator for Go test results. This tool converts Go's JSON test output into beautiful HTML reports with detailed test information and statistics.
 
+<div align=center>
+<img src="docs/screenshot.png" style="width:100%"/></a>
+</div>
+
+
+
 ## Features
 
 - **Beautiful HTML Reports**: Generate clean, responsive, and modern HTML reports for your Go tests
