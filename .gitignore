@@ -11,6 +11,8 @@ go-test2html
 
 test-report.html
 
+output.txt
+
 # Test binary, built with `go test -c`
 *.test
 

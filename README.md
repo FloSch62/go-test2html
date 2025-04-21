@@ -6,11 +6,10 @@ A clean and modern HTML report generator for Go test results. This tool converts
 <img src="docs/screenshot.png" style="width:100%"/></a>
 </div>
 
-
-
 ## Features
 
 - **Beautiful HTML Reports**: Generate clean, responsive, and modern HTML reports for your Go tests
+- **Dark Mode Support**: Toggle between light and dark themes or follow system preferences
 - **Test Summary**: Get quick insights with total, passed, failed, and skipped test counts
 - **Package Organization**: Tests are neatly organized by package with expandable sections
 - **Test Details**: Easily view test output, duration, and status
@@ -33,7 +32,7 @@ go build
 
 ## Usage
 
-The tool accepts JSON test output from Go's testing package and converts it to HTML. 
+The tool accepts JSON test output from Go's testing package and converts it to HTML.
 
 Basic usage:
 
@@ -57,11 +56,55 @@ go-test2html --input test-output.json
         Report title (default "Go Test Report")
 ```
 
-## Example
+## Examples
 
-```
+### Basic Usage
+
+```bash
 # Generate a report with a custom title
 go test ./... -json | go-test2html --title "My Project Test Results" --output my-report.html
+```
+
+### With gotestsum
+
+For live test output in the terminal while still capturing JSON for reports:
+
+```bash
+# Install gotestsum if you don't have it
+go install gotest.tools/gotestsum@latest
+
+# Run tests with live output and save JSON for reporting
+gotestsum --format=standard-verbose --jsonfile=test-reports/test-output.json ./...
+
+# Generate HTML report from the saved JSON
+go-test2html --input test-reports/test-output.json --output test-reports/test-report.html
+```
+
+### Example Taskfile.yml
+
+```yaml
+version: '3'
+
+tasks:
+  deps:
+    desc: Install test dependencies
+    cmds:
+      - go install gotest.tools/gotestsum@latest
+      - go install github.com/FloSch62/go-test2html@latest
+
+  test:
+    desc: Run tests with live output and generate HTML report
+    cmds:
+      - mkdir -p test-reports
+      - gotestsum --format=standard-verbose --jsonfile=test-reports/test-output.json ./...
+      - go-test2html --input test-reports/test-output.json --output test-reports/test-report.html
+
+  test:ci:
+    desc: Run tests for CI environment
+    cmds:
+      - mkdir -p test-reports
+      - gotestsum --format=standard-verbose --jsonfile=test-reports/test-output.json --junitfile=test-reports/junit.xml ./...
+      - go-test2html --input test-reports/test-output.json --output test-reports/test-report.html
 ```
 
 ## How It Works
@@ -72,20 +115,30 @@ go test ./... -json | go-test2html --title "My Project Test Results" --output my
 4. The data is rendered into a beautiful HTML report using an embedded template
 5. The final report is saved to the specified output file
 
-## Report Preview
+## Report Features
 
 The generated HTML report includes:
 
 - A header with the title and generation date
+- Theme toggle that follows system preferences by default
 - Summary cards showing test counts (total, passed, failed, skipped)
 - Collapsible package sections with test summaries
 - Detailed test information including name, duration, and status
 - Expandable test output for debugging failed tests
 - Responsive design that works on all devices
 
+### Dark Mode
+
+The report automatically detects your system's color scheme preference and applies the appropriate theme. You can manually toggle between light and dark modes using the switch in the header. Your preference is saved between sessions.
+
+<div align=center>
+<img src="docs/screenshot_dark.png" style="width:100%"/></a>
+</div>
+
 ## Why Use This?
 
 - **Better Visibility**: See all your test results in an easy-to-read format
+- **Eye-Friendly**: Switch between light and dark themes based on your preference
 - **Easier Debugging**: Quickly identify and debug failed tests
 - **Shareable Reports**: Generate reports that can be shared with team members
 - **CI Integration**: Add test reporting to your CI/CD pipelines
