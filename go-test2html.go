@@ -15,8 +15,8 @@ import (
 	"time"
 )
 
-//go:embed templates/report-template.html
-var reportTemplateFS embed.FS
+//go:embed templates/report-template.html templates/report-styles.css templates/report-script.js
+var templatesFS embed.FS
 
 // TestEvent represents a single event in the Go test output
 type TestEvent struct {
@@ -118,7 +118,7 @@ func formatTestName(name string) string {
 func main() {
 	inputFile := flag.String("input", "", "JSON input file (defaults to stdin if not specified)")
 	outputFile := flag.String("output", "test-report.html", "HTML output file")
-	title := flag.String("title", "Go Test to html", "Report title")
+	title := flag.String("title", "Go Test Report", "Report title")
 	flag.Parse()
 
 	var input io.Reader
@@ -288,16 +288,48 @@ func processEvents(events []TestEvent, title string) ReportData {
 }
 
 func generateHTML(report ReportData) (string, error) {
-	// Parse the template from the embedded file
-	tmpl, err := template.ParseFS(reportTemplateFS, "templates/report-template.html")
+	// Create a template with the main template and define named templates for CSS and JS
+	tmpl := template.New("report-template.html")
+
+	// Parse all template files from the embedded filesystem
+	htmlContent, err := templatesFS.ReadFile("templates/report-template.html")
 	if err != nil {
-		return "", fmt.Errorf("failed to parse template file: %v", err)
+		return "", fmt.Errorf("failed to read HTML template: %v", err)
 	}
 
+	cssContent, err := templatesFS.ReadFile("templates/report-styles.css")
+	if err != nil {
+		return "", fmt.Errorf("failed to read CSS template: %v", err)
+	}
+
+	jsContent, err := templatesFS.ReadFile("templates/report-script.js")
+	if err != nil {
+		return "", fmt.Errorf("failed to read JS template: %v", err)
+	}
+
+	// Parse the main template
+	tmpl, err = tmpl.Parse(string(htmlContent))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse HTML template: %v", err)
+	}
+
+	// Add the CSS as a named template
+	_, err = tmpl.New("styles").Parse(string(cssContent))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse CSS template: %v", err)
+	}
+
+	// Add the JS as a named template
+	_, err = tmpl.New("scripts").Parse(string(jsContent))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse JS template: %v", err)
+	}
+
+	// Execute the template with the report data
 	var buffer strings.Builder
 	err = tmpl.Execute(&buffer, report)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to execute template: %v", err)
 	}
 
 	return buffer.String(), nil
