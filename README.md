@@ -90,10 +90,6 @@ The generated HTML report includes:
 - **Shareable Reports**: Generate reports that can be shared with team members
 - **CI Integration**: Add test reporting to your CI/CD pipelines
 
-## License
-
-[MIT License](LICENSE)
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
