@@ -45,6 +45,29 @@
             margin-top: 0;
         }
 
+        .search-container {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .search-field {
+            width: 100%;
+            max-width: 600px;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-field:focus {
+            outline: none;
+            border-color: var(--info-color);
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+        }
+
         .summary {
             display: flex;
             justify-content: space-between;
@@ -61,11 +84,18 @@
             padding: 20px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
             text-align: center;
-            transition: transform 0.2s ease-in-out;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            cursor: pointer;
+            position: relative;
         }
 
         .summary-card:hover {
             transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-card.active {
+            box-shadow: 0 0 0 3px var(--info-color);
         }
 
         .summary-card.total {
@@ -86,6 +116,7 @@
 
         .summary-card.duration {
             border-top: 4px solid var(--duration-color);
+            cursor: default; /* Duration is not clickable for filtering */
         }
 
         .summary-number {
@@ -94,12 +125,84 @@
             margin: 10px 0;
         }
 
+        .filter-indicator {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: var(--info-color);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .summary-card.active .filter-indicator {
+            opacity: 1;
+        }
+
+        .filter-status {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #666;
+            min-height: 22px;
+            transition: opacity 0.3s ease;
+        }
+
+        .filter-status:empty {
+            opacity: 0;
+        }
+
+        .filter-status:not(:empty) {
+            opacity: 1;
+        }
+
+        .filter-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin: 0 4px;
+            font-weight: 500;
+        }
+
+        .filter-tag.passed {
+            background-color: rgba(76, 175, 80, 0.15);
+            color: var(--success-color);
+        }
+
+        .filter-tag.failed {
+            background-color: rgba(244, 67, 54, 0.15);
+            color: var(--error-color);
+        }
+
+        .filter-tag.skipped {
+            background-color: rgba(255, 152, 0, 0.15);
+            color: var(--warning-color);
+        }
+
+        .filter-tag.search {
+            background-color: rgba(33, 150, 243, 0.15);
+            color: var(--info-color);
+        }
+
         .package {
             background: var(--card-bg-color);
             border-radius: 8px;
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.07);
             overflow: hidden;
+            transition: opacity 0.3s ease;
+        }
+
+        .package.hidden {
+            display: none;
         }
 
         .package-header {
@@ -175,7 +278,11 @@
         .test-item {
             padding: 12px 20px;
             border-bottom: 1px solid var(--border-color);
-            transition: background-color 0.2s ease;
+            transition: background-color 0.2s ease, opacity 0.3s ease;
+        }
+
+        .test-item.hidden {
+            display: none;
         }
 
         .test-item:hover {
@@ -266,6 +373,32 @@
             transform: rotate(90deg);
         }
 
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2rem;
+            color: #666;
+            background: white;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .clear-filters {
+            background-color: #f5f7fa;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .clear-filters:hover {
+            background-color: var(--hover-color);
+        }
+
         @media (max-width: 768px) {
             .summary {
                 flex-direction: column;
@@ -286,22 +419,32 @@
         <header>
             <h1>{{ .Title }}</h1>
             <p>Generated on {{ .Date.Format "Jan 02, 2006 at 15:04:05" }}</p>
+            
+            <div class="search-container">
+                <input type="text" placeholder="Search tests..." class="search-field" id="searchField">
+            </div>
         </header>
 
+        <div class="filter-status" id="filterStatus"></div>
+
         <div class="summary">
-            <div class="summary-card total">
+            <div class="summary-card total" data-filter="all">
+                <div class="filter-indicator">✓</div>
                 <div>Total Tests</div>
                 <div class="summary-number">{{ .Summary.Total }}</div>
             </div>
-            <div class="summary-card passed">
+            <div class="summary-card passed" data-filter="passed">
+                <div class="filter-indicator">✓</div>
                 <div>Passed</div>
                 <div class="summary-number">{{ .Summary.Passed }}</div>
             </div>
-            <div class="summary-card failed">
+            <div class="summary-card failed" data-filter="failed">
+                <div class="filter-indicator">✓</div>
                 <div>Failed</div>
                 <div class="summary-number">{{ .Summary.Failed }}</div>
             </div>
-            <div class="summary-card skipped">
+            <div class="summary-card skipped" data-filter="skipped">
+                <div class="filter-indicator">✓</div>
                 <div>Skipped</div>
                 <div class="summary-number">{{ .Summary.Skipped }}</div>
             </div>
@@ -311,9 +454,9 @@
             </div>
         </div>
 
-        <div class="packages">
+        <div class="packages" id="packagesContainer">
             {{ range $pkgName, $pkg := .Packages }}
-            <div class="package">
+            <div class="package" data-package="{{ $pkg.Name }}">
                 <div class="package-header" onclick="togglePackage(this)">
                     <div class="package-name">
                         <span class="toggle-icon">▶</span>{{ $pkg.Name }}
@@ -332,7 +475,9 @@
                 <div class="package-content">
                     <ul class="test-list">
                         {{ range $test := $pkg.SortedTests }}
-                        <li class="test-item">
+                        <li class="test-item" 
+                            data-test-name="{{ $test.FormattedName }}"
+                            data-test-status="{{ if $test.Passed }}passed{{ else if $test.Failed }}failed{{ else if $test.Skipped }}skipped{{ end }}">
                             <div class="test-header" onclick="toggleOutput(this.parentNode)">
                                 <div class="test-name">{{ $test.FormattedName }}</div>
                                 <div class="test-meta">
@@ -357,28 +502,63 @@
             {{ end }}
         </div>
 
+        <div class="no-results" id="noResults">
+            No tests match the current filters.
+        </div>
+
         <footer>
             <p>Go Test Report Generator</p>
         </footer>
     </div>
 
     <script>
-        function togglePackage(header) {
-            header.classList.toggle('open');
-            const content = header.nextElementSibling;
-            content.classList.toggle('open');
-        }
-
-        function toggleOutput(test) {
-            const output = test.querySelector('.test-output');
-            if (output) {
-                output.classList.toggle('open');
+        // State management
+        const state = {
+            statusFilter: 'all', // 'all', 'passed', 'failed', 'skipped'
+            searchTerm: '',
+            updateFilters: function() {
+                applyFilters();
+                updateFilterStatus();
             }
-        }
+        };
 
-        // Automatically open packages with failures
-        document.addEventListener('DOMContentLoaded', function() {
-            const packagesWithFailures = Array.from(document.querySelectorAll('.package'))
+        // DOM Elements
+        const searchField = document.getElementById('searchField');
+        const filterStatus = document.getElementById('filterStatus');
+        const noResults = document.getElementById('noResults');
+        const summaryCards = document.querySelectorAll('.summary-card[data-filter]');
+        const packages = document.querySelectorAll('.package');
+        const allTests = document.querySelectorAll('.test-item');
+
+        // Event Listeners
+        searchField.addEventListener('input', function() {
+            state.searchTerm = this.value.toLowerCase().trim();
+            state.updateFilters();
+        });
+
+        summaryCards.forEach(card => {
+            card.addEventListener('click', function() {
+                const filter = this.getAttribute('data-filter');
+                
+                // Toggle filter if it's already active
+                if (state.statusFilter === filter) {
+                    state.statusFilter = 'all';
+                } else {
+                    state.statusFilter = filter;
+                }
+                
+                updateActiveFilterCard();
+                state.updateFilters();
+            });
+        });
+
+        // Initialize with "all" filter active
+        function initializeFilters() {
+            updateActiveFilterCard();
+            state.updateFilters();
+            
+            // Automatically open packages with failures
+            const packagesWithFailures = Array.from(packages)
                 .filter(pkg => pkg.querySelector('.summary-item.failed'));
 
             packagesWithFailures.forEach(pkg => {
@@ -387,7 +567,107 @@
                 header.classList.add('open');
                 content.classList.add('open');
             });
-        });
+        }
+
+        // Update active filter card visual state
+        function updateActiveFilterCard() {
+            summaryCards.forEach(card => {
+                const cardFilter = card.getAttribute('data-filter');
+                if (cardFilter === state.statusFilter) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+        }
+
+        // Update filter status text
+        function updateFilterStatus() {
+            let statusHTML = '';
+            
+            if (state.statusFilter !== 'all') {
+                const statusText = state.statusFilter.charAt(0).toUpperCase() + state.statusFilter.slice(1);
+                statusHTML += `Showing <span class="filter-tag ${state.statusFilter}">${statusText} tests</span>`;
+            }
+            
+            if (state.searchTerm) {
+                if (statusHTML) statusHTML += ' and ';
+                statusHTML += `Search: <span class="filter-tag search">${state.searchTerm}</span>`;
+            }
+            
+            if (statusHTML) {
+                statusHTML += '<button class="clear-filters" onclick="clearFilters()">Clear all</button>';
+            }
+            
+            filterStatus.innerHTML = statusHTML;
+        }
+
+        // Clear all filters
+        function clearFilters() {
+            state.statusFilter = 'all';
+            state.searchTerm = '';
+            searchField.value = '';
+            updateActiveFilterCard();
+            state.updateFilters();
+        }
+
+        // Apply filters to test items
+        function applyFilters() {
+            let visibleTestCount = 0;
+            let visiblePackages = new Set();
+            
+            // First hide all tests according to filters
+            allTests.forEach(test => {
+                const testName = test.getAttribute('data-test-name').toLowerCase();
+                const testStatus = test.getAttribute('data-test-status');
+                const matchesStatus = state.statusFilter === 'all' || testStatus === state.statusFilter;
+                const matchesSearch = !state.searchTerm || testName.includes(state.searchTerm);
+                
+                if (matchesStatus && matchesSearch) {
+                    test.classList.remove('hidden');
+                    visibleTestCount++;
+                    // Track which package has visible tests
+                    const packageElement = test.closest('.package');
+                    visiblePackages.add(packageElement);
+                } else {
+                    test.classList.add('hidden');
+                }
+            });
+            
+            // Then hide packages with no visible tests
+            packages.forEach(pkg => {
+                if (visiblePackages.has(pkg)) {
+                    pkg.classList.remove('hidden');
+                } else {
+                    pkg.classList.add('hidden');
+                }
+            });
+            
+            // Show "no results" message if needed
+            if (visibleTestCount === 0) {
+                noResults.style.display = 'block';
+            } else {
+                noResults.style.display = 'none';
+            }
+        }
+
+        // Toggle package expansion
+        function togglePackage(header) {
+            header.classList.toggle('open');
+            const content = header.nextElementSibling;
+            content.classList.toggle('open');
+        }
+
+        // Toggle test output display
+        function toggleOutput(test) {
+            const output = test.querySelector('.test-output');
+            if (output) {
+                output.classList.toggle('open');
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeFilters);
     </script>
 </body>
 </html>
