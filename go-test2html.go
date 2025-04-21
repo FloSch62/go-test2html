@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"io"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -39,21 +40,23 @@ func (e TestEvent) ParsedTime() time.Time {
 
 // TestResult aggregates information about a single test
 type TestResult struct {
-	Name      string
-	Package   string
-	Passed    bool
-	Skipped   bool
-	Failed    bool
-	Duration  float64
-	Output    []string
-	Timestamp time.Time // Store the timestamp for sorting
+	Name          string
+	Package       string
+	Passed        bool
+	Skipped       bool
+	Failed        bool
+	Duration      float64
+	Output        []string
+	Timestamp     time.Time // Store the timestamp for sorting
+	FormattedName string    // Store the human-readable formatted name
 }
 
 // PackageResult aggregates test results by package
 type PackageResult struct {
-	Name    string
-	Tests   map[string]*TestResult
-	Summary struct {
+	Name          string
+	Tests         map[string]*TestResult
+	TotalDuration float64 // Track total duration for the package
+	Summary       struct {
 		Total   int
 		Passed  int
 		Failed  int
@@ -78,15 +81,38 @@ func (p *PackageResult) SortedTests() []*TestResult {
 
 // ReportData holds all data for the report template
 type ReportData struct {
-	Title   string
-	Date    time.Time
-	Summary struct {
+	Title         string
+	Date          time.Time
+	TotalDuration float64 // Track overall total duration
+	Summary       struct {
 		Total   int
 		Passed  int
 		Failed  int
 		Skipped int
 	}
 	Packages map[string]*PackageResult
+}
+
+// formatTestName converts test names from camelCase or snake_case to readable format
+// e.g., "TestLoginSuperuser" becomes "Test Login Superuser"
+func formatTestName(name string) string {
+	// Skip if it's not a typical test name
+	if !strings.HasPrefix(name, "Test") {
+		return name
+	}
+
+	// Add space before capitals
+	re := regexp.MustCompile(`([a-z])([A-Z])`)
+	name = re.ReplaceAllString(name, "$1 $2")
+
+	// Replace underscores with spaces
+	name = strings.ReplaceAll(name, "_", " ")
+
+	// Ensure proper spacing after "Test" prefix
+	if strings.HasPrefix(name, "Test ") {
+		return name
+	}
+	return strings.Replace(name, "Test", "Test ", 1)
 }
 
 func main() {
@@ -214,9 +240,10 @@ func processEvents(events []TestEvent, title string) ReportData {
 		test, ok := pkg.Tests[event.Test]
 		if !ok {
 			test = &TestResult{
-				Name:      event.Test,
-				Package:   event.Package,
-				Timestamp: event.ParsedTime(), // Store timestamp
+				Name:          event.Test,
+				FormattedName: formatTestName(event.Test), // Format the test name
+				Package:       event.Package,
+				Timestamp:     event.ParsedTime(), // Store timestamp
 			}
 			pkg.Tests[event.Test] = test
 		}
@@ -230,15 +257,19 @@ func processEvents(events []TestEvent, title string) ReportData {
 			test.Passed = true
 			pkg.Summary.Passed++
 			pkg.Summary.Total++
+			pkg.TotalDuration += event.Elapsed
 			report.Summary.Passed++
 			report.Summary.Total++
+			report.TotalDuration += event.Elapsed
 		case "fail":
 			test.Duration = event.Elapsed
 			test.Failed = true
 			pkg.Summary.Failed++
 			pkg.Summary.Total++
+			pkg.TotalDuration += event.Elapsed
 			report.Summary.Failed++
 			report.Summary.Total++
+			report.TotalDuration += event.Elapsed
 		case "skip":
 			test.Duration = event.Elapsed
 			test.Skipped = true

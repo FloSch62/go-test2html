@@ -15,6 +15,7 @@
             --text-color: #333333;
             --border-color: #e0e0e0;
             --hover-color: #f1f3f5;
+            --duration-color: #607d8b;
         }
 
         body {
@@ -83,6 +84,10 @@
             border-top: 4px solid var(--warning-color);
         }
 
+        .summary-card.duration {
+            border-top: 4px solid var(--duration-color);
+        }
+
         .summary-number {
             font-size: 2.5rem;
             font-weight: bold;
@@ -120,6 +125,7 @@
         .package-summary {
             display: flex;
             gap: 15px;
+            align-items: center;
         }
 
         .summary-item {
@@ -141,6 +147,11 @@
         .summary-item.skipped {
             background-color: rgba(255, 152, 0, 0.15);
             color: var(--warning-color);
+        }
+
+        .summary-item.duration {
+            background-color: rgba(96, 125, 139, 0.15);
+            color: var(--duration-color);
         }
 
         .package-content {
@@ -263,6 +274,10 @@
             .summary-card {
                 margin: 5px 0;
             }
+
+            .package-summary {
+                flex-wrap: wrap;
+            }
         }
     </style>
 </head>
@@ -290,6 +305,10 @@
                 <div>Skipped</div>
                 <div class="summary-number">{{ .Summary.Skipped }}</div>
             </div>
+            <div class="summary-card duration">
+                <div>Total Duration</div>
+                <div class="summary-number">{{ printf "%.2f" .TotalDuration }}s</div>
+            </div>
         </div>
 
         <div class="packages">
@@ -307,6 +326,7 @@
                         {{ if gt $pkg.Summary.Skipped 0 }}
                         <div class="summary-item skipped">{{ $pkg.Summary.Skipped }} skipped</div>
                         {{ end }}
+                        <div class="summary-item duration">{{ printf "%.2f" $pkg.TotalDuration }}s</div>
                     </div>
                 </div>
                 <div class="package-content">
@@ -314,7 +334,7 @@
                         {{ range $test := $pkg.SortedTests }}
                         <li class="test-item">
                             <div class="test-header" onclick="toggleOutput(this.parentNode)">
-                                <div class="test-name">{{ $test.Name }}</div>
+                                <div class="test-name">{{ $test.FormattedName }}</div>
                                 <div class="test-meta">
                                     <div class="test-duration">{{ printf "%.2f" $test.Duration }}s</div>
                                     {{ if $test.Passed }}
