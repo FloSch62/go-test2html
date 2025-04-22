@@ -13,6 +13,7 @@
     --package-header-bg: #f5f7fa;
     --test-output-bg: #f8f9fa;
     --footer-color: #666;
+    --subtest-bg: #f9fafc;
 }
 
 [data-theme="dark"] {
@@ -25,6 +26,7 @@
     --package-header-bg: #252525;
     --test-output-bg: #252525;
     --footer-color: #999;
+    --subtest-bg: #1a1a1a;
     /* Keep accent colors similar but with slight adjustments */
     --success-color: #5cdb5c;
     --error-color: #ff5252;
@@ -274,6 +276,11 @@ h1, h2, h3 {
     color: var(--duration-color);
 }
 
+.summary-item.total {
+    background-color: rgba(33, 150, 243, 0.15);
+    color: var(--info-color);
+}
+
 .package-content {
     padding: 0;
     max-height: 0;
@@ -320,6 +327,8 @@ h1, h2, h3 {
 .test-name {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     font-weight: 500;
+    display: flex;
+    align-items: center;
 }
 
 .test-meta {
@@ -372,6 +381,30 @@ h1, h2, h3 {
     display: block;
 }
 
+/* Styles for subtests */
+.subtest-container {
+    margin-top: 10px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.subtest-container.open {
+    max-height: 2000px;
+    transition: max-height 0.5s ease-in;
+}
+
+.subtest-list {
+    margin-left: 20px;
+    background-color: var(--subtest-bg);
+    border-left: 2px solid var(--border-color);
+    border-radius: 0 0 4px 4px;
+}
+
+.subtest-item {
+    padding: 10px 15px;
+}
+
 footer {
     text-align: center;
     margin-top: 30px;
@@ -386,7 +419,8 @@ footer {
     margin-right: 5px;
 }
 
-.package-header.open .toggle-icon {
+.package-header.open .toggle-icon,
+.test-item.open > .test-header .toggle-icon {
     transform: rotate(90deg);
 }
 

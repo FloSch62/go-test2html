@@ -47,8 +47,12 @@ type TestResult struct {
 	Failed        bool
 	Duration      float64
 	Output        []string
-	Timestamp     time.Time // Store the timestamp for sorting
-	FormattedName string    // Store the human-readable formatted name
+	Timestamp     time.Time              // Store the timestamp for sorting
+	FormattedName string                 // Store the human-readable formatted name
+	Children      map[string]*TestResult // Child tests (subtests)
+	IsSubtest     bool                   // Whether this is a subtest
+	Parent        string                 // Name of the parent test (if this is a subtest)
+	Status        string                 // Status as a string: "passed", "failed", "skipped"
 }
 
 // PackageResult aggregates test results by package
@@ -64,19 +68,40 @@ type PackageResult struct {
 	}
 }
 
-// SortedTests returns tests sorted by timestamp
-func (p *PackageResult) SortedTests() []*TestResult {
-	tests := make([]*TestResult, 0, len(p.Tests))
+// GetRootTests returns top-level tests (non-subtests) sorted by timestamp
+func (p *PackageResult) GetRootTests() []*TestResult {
+	rootTests := make([]*TestResult, 0)
 	for _, test := range p.Tests {
-		tests = append(tests, test)
+		if !test.IsSubtest {
+			rootTests = append(rootTests, test)
+		}
 	}
 
 	// Sort tests by timestamp
-	sort.Slice(tests, func(i, j int) bool {
-		return tests[i].Timestamp.Before(tests[j].Timestamp)
+	sort.Slice(rootTests, func(i, j int) bool {
+		return rootTests[i].Timestamp.Before(rootTests[j].Timestamp)
 	})
 
-	return tests
+	return rootTests
+}
+
+// GetSortedChildren returns child tests sorted by timestamp
+func (t *TestResult) GetSortedChildren() []*TestResult {
+	if len(t.Children) == 0 {
+		return nil
+	}
+
+	children := make([]*TestResult, 0, len(t.Children))
+	for _, child := range t.Children {
+		children = append(children, child)
+	}
+
+	// Sort children by timestamp
+	sort.Slice(children, func(i, j int) bool {
+		return children[i].Timestamp.Before(children[j].Timestamp)
+	})
+
+	return children
 }
 
 // ReportData holds all data for the report template
@@ -96,6 +121,12 @@ type ReportData struct {
 // formatTestName converts test names from camelCase or snake_case to readable format
 // e.g., "TestLoginSuperuser" becomes "Test Login Superuser"
 func formatTestName(name string) string {
+	// For subtests, only format the subtest part
+	if strings.Contains(name, "/") {
+		parts := strings.SplitN(name, "/", 2)
+		return parts[0] + "/" + formatTestName(parts[1])
+	}
+
 	// Skip if it's not a typical test name
 	if !strings.HasPrefix(name, "Test") {
 		return name
@@ -113,6 +144,24 @@ func formatTestName(name string) string {
 		return name
 	}
 	return strings.Replace(name, "Test", "Test ", 1)
+}
+
+// extractTestName returns the last part of a test name after the last slash
+func extractTestName(fullName string) string {
+	if !strings.Contains(fullName, "/") {
+		return fullName
+	}
+	parts := strings.Split(fullName, "/")
+	return parts[len(parts)-1]
+}
+
+// hasParentTest checks if a test is a subtest and returns the parent test name
+func hasParentTest(testName string) (bool, string) {
+	if !strings.Contains(testName, "/") {
+		return false, ""
+	}
+	lastSlashIndex := strings.LastIndex(testName, "/")
+	return true, testName[:lastSlashIndex]
 }
 
 func main() {
@@ -237,15 +286,40 @@ func processEvents(events []TestEvent, title string) ReportData {
 			continue
 		}
 
+		// Check if this is a subtest
+		isSubtest, parentName := hasParentTest(event.Test)
+
+		// Get or create the test
 		test, ok := pkg.Tests[event.Test]
 		if !ok {
 			test = &TestResult{
 				Name:          event.Test,
-				FormattedName: formatTestName(event.Test), // Format the test name
+				FormattedName: extractTestName(formatTestName(event.Test)), // Extract just the subtest name for display
 				Package:       event.Package,
-				Timestamp:     event.ParsedTime(), // Store timestamp
+				Timestamp:     event.ParsedTime(),
+				Children:      make(map[string]*TestResult),
+				IsSubtest:     isSubtest,
+				Parent:        parentName,
 			}
 			pkg.Tests[event.Test] = test
+
+			// If this is a subtest, add it to its parent
+			if isSubtest {
+				parent, parentExists := pkg.Tests[parentName]
+				if !parentExists {
+					// Create the parent if it doesn't exist yet
+					parent = &TestResult{
+						Name:          parentName,
+						FormattedName: formatTestName(parentName),
+						Package:       event.Package,
+						Timestamp:     event.ParsedTime(), // Will be updated when we process the parent's events
+						Children:      make(map[string]*TestResult),
+						IsSubtest:     false,
+					}
+					pkg.Tests[parentName] = parent
+				}
+				parent.Children[test.Name] = test
+			}
 		}
 
 		switch event.Action {
@@ -255,31 +329,88 @@ func processEvents(events []TestEvent, title string) ReportData {
 		case "pass":
 			test.Duration = event.Elapsed
 			test.Passed = true
-			pkg.Summary.Passed++
-			pkg.Summary.Total++
+			test.Status = "passed"
 			pkg.TotalDuration += event.Elapsed
-			report.Summary.Passed++
-			report.Summary.Total++
+
+			// Only count in summary if it's a leaf test (no children)
+			if len(test.Children) == 0 {
+				pkg.Summary.Passed++
+				pkg.Summary.Total++
+				report.Summary.Passed++
+				report.Summary.Total++
+			}
 			report.TotalDuration += event.Elapsed
 		case "fail":
 			test.Duration = event.Elapsed
 			test.Failed = true
-			pkg.Summary.Failed++
-			pkg.Summary.Total++
+			test.Status = "failed"
 			pkg.TotalDuration += event.Elapsed
-			report.Summary.Failed++
-			report.Summary.Total++
+
+			// Only count in summary if it's a leaf test (no children)
+			if len(test.Children) == 0 {
+				pkg.Summary.Failed++
+				pkg.Summary.Total++
+				report.Summary.Failed++
+				report.Summary.Total++
+			}
 			report.TotalDuration += event.Elapsed
+
+			// If a subtest fails, mark its parent as failed too
+			if test.IsSubtest {
+				if parent, ok := pkg.Tests[test.Parent]; ok {
+					parent.Failed = true
+					parent.Passed = false
+					parent.Status = "failed"
+				}
+			}
 		case "skip":
 			test.Duration = event.Elapsed
 			test.Skipped = true
-			pkg.Summary.Skipped++
-			pkg.Summary.Total++
-			report.Summary.Skipped++
-			report.Summary.Total++
+			test.Status = "skipped"
+
+			// Only count in summary if it's a leaf test (no children)
+			if len(test.Children) == 0 {
+				pkg.Summary.Skipped++
+				pkg.Summary.Total++
+				report.Summary.Skipped++
+				report.Summary.Total++
+			}
 		case "output":
 			if event.Output != "" {
 				test.Output = append(test.Output, event.Output)
+			}
+		}
+	}
+
+	// Third pass: Verify that parent tests with no children are counted
+	// This can happen when a test has no subtests but is still a valid test
+	for _, pkg := range packages {
+		for _, test := range pkg.Tests {
+			if !test.IsSubtest && len(test.Children) == 0 {
+				// This is a top-level test with no children, ensure it's counted
+				if test.Passed && !test.Failed && !test.Skipped {
+					// Only update if not already counted (avoid double counting)
+					if pkg.Summary.Passed == 0 || report.Summary.Passed == 0 {
+						pkg.Summary.Passed++
+						pkg.Summary.Total++
+						report.Summary.Passed++
+						report.Summary.Total++
+					}
+				} else if test.Failed {
+					if pkg.Summary.Failed == 0 || report.Summary.Failed == 0 {
+						pkg.Summary.Failed++
+						pkg.Summary.Total++
+						report.Summary.Failed++
+						report.Summary.Total++
+					}
+				} else if test.Skipped {
+					if pkg.Summary.Skipped == 0 || report.Summary.Skipped == 0 {
+						pkg.Summary.Skipped++
+						pkg.Summary.Total++
+						report.Summary.Skipped++
+						report.Summary.Total++
+					}
+				}
 			}
 		}
 	}

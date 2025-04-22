@@ -74,12 +74,19 @@
                 </div>
                 <div class="package-content">
                     <ul class="test-list">
-                        {{ range $test := $pkg.SortedTests }}
+                        <!-- Display only root tests at this level -->
+                        {{ range $test := $pkg.GetRootTests }}
                         <li class="test-item"
-                            data-test-name="{{ $test.FormattedName }}"
-                            data-test-status="{{ if $test.Passed }}passed{{ else if $test.Failed }}failed{{ else if $test.Skipped }}skipped{{ end }}">
-                            <div class="test-header" onclick="toggleOutput(this.parentNode)">
-                                <div class="test-name">{{ $test.FormattedName }}</div>
+                            data-test-name="{{ $test.Name }}"
+                            data-test-status="{{ $test.Status }}">
+                            <div class="test-header" onclick="toggleTest(this.parentNode)">
+                                <div class="test-name">
+                                    <!-- Show toggle icon only if test has children -->
+                                    {{ if gt (len $test.Children) 0 }}
+                                    <span class="toggle-icon">▶</span>
+                                    {{ end }}
+                                    {{ $test.FormattedName }}
+                                </div>
                                 <div class="test-meta">
                                     <div class="test-duration">{{ printf "%.2f" $test.Duration }}s</div>
                                     {{ if $test.Passed }}
@@ -93,6 +100,36 @@
                             </div>
                             {{ if $test.Output }}
                             <div class="test-output">{{ range $line := $test.Output }}{{ $line }}{{ end }}</div>
+                            {{ end }}
+
+                            <!-- If test has children, create a nested list -->
+                            {{ if gt (len $test.Children) 0 }}
+                            <div class="subtest-container">
+                                <ul class="test-list subtest-list">
+                                    {{ range $child := $test.GetSortedChildren }}
+                                    <li class="test-item subtest-item"
+                                        data-test-name="{{ $child.Name }}"
+                                        data-test-status="{{ $child.Status }}">
+                                        <div class="test-header" onclick="toggleOutput(this.parentNode)">
+                                            <div class="test-name">{{ $child.FormattedName }}</div>
+                                            <div class="test-meta">
+                                                <div class="test-duration">{{ printf "%.2f" $child.Duration }}s</div>
+                                                {{ if $child.Passed }}
+                                                <div class="test-status passed">PASS</div>
+                                                {{ else if $child.Failed }}
+                                                <div class="test-status failed">FAIL</div>
+                                                {{ else if $child.Skipped }}
+                                                <div class="test-status skipped">SKIP</div>
+                                                {{ end }}
+                                            </div>
+                                        </div>
+                                        {{ if $child.Output }}
+                                        <div class="test-output">{{ range $line := $child.Output }}{{ $line }}{{ end }}</div>
+                                        {{ end }}
+                                    </li>
+                                    {{ end }}
+                                </ul>
+                            </div>
                             {{ end }}
                         </li>
                         {{ end }}
