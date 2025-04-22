@@ -14,6 +14,7 @@
     --test-output-bg: #f8f9fa;
     --footer-color: #666;
     --subtest-bg: #f9fafc;
+    --debug-color: #64b5f6;
 }
 
 [data-theme="dark"] {
@@ -32,6 +33,7 @@
     --error-color: #ff5252;
     --warning-color: #ffb74d;
     --info-color: #64b5f6;
+    --debug-color: #64b5f6;
 }
 
 body {
@@ -85,6 +87,104 @@ h1, h2, h3 {
     outline: none;
     border-color: var(--info-color);
     box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+}
+
+/* Controls wrapper for theme and debug toggles */
+.controls-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px; /* Reduced gap between controls */
+    margin: 15px auto 0;
+}
+
+/* Theme switch styling */
+.theme-switch-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.theme-switch {
+    display: inline-block;
+    height: 24px;
+    position: relative;
+    width: 50px;
+}
+
+.theme-switch input {
+    display: none;
+}
+
+.slider {
+    background-color: #ccc;
+    bottom: 0;
+    cursor: pointer;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    transition: .4s;
+}
+
+.slider:before {
+    background-color: #fff;
+    bottom: 4px;
+    content: "";
+    height: 16px;
+    left: 4px;
+    position: absolute;
+    transition: .4s;
+    width: 16px;
+}
+
+input:checked + .slider {
+    background-color: var(--info-color);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+.theme-switch-wrapper em,
+.debug-switch-wrapper em {
+    margin-left: 10px;
+    font-size: 0.9rem;
+}
+
+/* Debug toggle styles - similar to theme toggle */
+.debug-switch-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.debug-switch {
+    display: inline-block;
+    height: 24px;
+    position: relative;
+    width: 50px;
+}
+
+.debug-switch input {
+    display: none;
+}
+
+/* Debug content styling */
+.debug-content {
+    display: none; /* Hide by default */
+    color: var(--debug-color);
+}
+
+/* Show debug content when the class is applied to body */
+body.show-debug .debug-content {
+    display: block;
 }
 
 .summary {
@@ -448,68 +548,6 @@ footer {
 
 .clear-filters:hover {
     background-color: var(--hover-color);
-}
-
-/* Dark mode toggle styles */
-.theme-switch-wrapper {
-    display: flex;
-    align-items: center;
-    margin: 15px auto 0;
-    justify-content: center;
-}
-
-.theme-switch {
-    display: inline-block;
-    height: 24px;
-    position: relative;
-    width: 50px;
-}
-
-.theme-switch input {
-    display: none;
-}
-
-.slider {
-    background-color: #ccc;
-    bottom: 0;
-    cursor: pointer;
-    left: 0;
-    position: absolute;
-    right: 0;
-    top: 0;
-    transition: .4s;
-}
-
-.slider:before {
-    background-color: #fff;
-    bottom: 4px;
-    content: "";
-    height: 16px;
-    left: 4px;
-    position: absolute;
-    transition: .4s;
-    width: 16px;
-}
-
-input:checked + .slider {
-    background-color: var(--info-color);
-}
-
-input:checked + .slider:before {
-    transform: translateX(26px);
-}
-
-.slider.round {
-    border-radius: 34px;
-}
-
-.slider.round:before {
-    border-radius: 50%;
-}
-
-.theme-switch-wrapper em {
-    margin-left: 10px;
-    font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {

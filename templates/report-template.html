@@ -12,12 +12,22 @@
             <h1>{{ .Title }}</h1>
             <p>Generated on {{ .Date.Format "Jan 02, 2006 at 15:04:05" }}</p>
 
-            <div class="theme-switch-wrapper">
-                <label class="theme-switch" for="checkbox">
-                    <input type="checkbox" id="checkbox" />
-                    <div class="slider round"></div>
-                </label>
-                <em>Dark Mode</em>
+            <div class="controls-wrapper">
+                <div class="theme-switch-wrapper">
+                    <label class="theme-switch" for="checkbox">
+                        <input type="checkbox" id="checkbox" />
+                        <div class="slider round"></div>
+                    </label>
+                    <em>Dark Mode</em>
+                </div>
+                
+                <div class="debug-switch-wrapper">
+                    <label class="debug-switch" for="debug-checkbox">
+                        <input type="checkbox" id="debug-checkbox" />
+                        <div class="slider round"></div>
+                    </label>
+                    <em>Show Debug</em>
+                </div>
             </div>
 
             <div class="search-container">
