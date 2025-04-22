@@ -10,6 +10,8 @@ A clean and modern HTML report generator for Go test results. This tool converts
 
 - **Beautiful HTML Reports**: Generate clean, responsive, and modern HTML reports for your Go tests
 - **Dark Mode Support**: Toggle between light and dark themes or follow system preferences
+- **Debug Toggle**: Show or hide debug messages in test output with a single click
+- **Test Suite Support**: Full support for Testify's suite-based testing with proper hierarchy
 - **Test Summary**: Get quick insights with total, passed, failed, and skipped test counts
 - **Package Organization**: Tests are neatly organized by package with expandable sections
 - **Test Details**: Easily view test output, duration, and status
@@ -121,6 +123,7 @@ The generated HTML report includes:
 
 - A header with the title and generation date
 - Theme toggle that follows system preferences by default
+- Debug toggle to show/hide detailed debug output when present
 - Summary cards showing test counts (total, passed, failed, skipped)
 - Collapsible package sections with test summaries
 - Detailed test information including name, duration, and status
@@ -135,11 +138,26 @@ The report automatically detects your system's color scheme preference and appli
 <img src="docs/screenshot_dark.png" style="width:100%"/></a>
 </div>
 
+### Debug Toggle
+
+For tests that include debug output (lines containing "DEBUG:"), the report now includes a toggle switch to show or hide this information. This keeps the report clean and focused by default, while still allowing you to access detailed debug information when needed.
+
+- Debug messages are hidden by default for a cleaner initial view
+- Toggle the "Show Debug" switch to reveal all debug information
+- Debug content is properly grouped, including related data like JSON payloads
+
+This feature is particularly useful for tests that include extensive logging or debugging information.
+
+## TestifyTestSuite Support
+
+The report generator now properly handles tests created with the Testify testing framework's suite functionality. Test suites are properly organized with the correct hierarchy, making it easier to navigate complex test structures.
+
 ## Why Use This?
 
 - **Better Visibility**: See all your test results in an easy-to-read format
 - **Eye-Friendly**: Switch between light and dark themes based on your preference
 - **Easier Debugging**: Quickly identify and debug failed tests
+- **Clean Reports**: Hide detailed debug information by default, but access it when needed
 - **Shareable Reports**: Generate reports that can be shared with team members
 - **CI Integration**: Add test reporting to your CI/CD pipelines
 
